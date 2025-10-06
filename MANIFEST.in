@@ -1,0 +1,15 @@
+# documentation: https://packaging.python.org/en/latest/guides/using-manifest-in/
+
+include README.md
+include INSTALL.md
+include changelog
+
+recursive-include test_data *
+recursive-include recipe *
+prune test_real
+
+graft mitoz
+recursive-exclude mitoz/annotate/script/Protein_Annotation_BGI_V1.33 *
+
+prune __pycache__
+global-exclude *.py[cod]

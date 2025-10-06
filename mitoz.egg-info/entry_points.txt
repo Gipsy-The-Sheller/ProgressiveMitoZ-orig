@@ -1,0 +1,3 @@
+[console_scripts]
+mitoz = mitoz.MitoZ:main
+mitoz-tools = mitoz.tools:main

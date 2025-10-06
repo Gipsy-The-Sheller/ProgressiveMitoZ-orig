@@ -1,0 +1,45 @@
+name: mitozEnv
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython
+  - blast
+  - bs4
+  - bwa
+  - circos=0.69
+  - coreutils
+  - ete3>=3.1.2
+  - fastp
+  - hmmer=3.1b2
+  - html5lib
+  - infernal=1.1.1
+  - libgd
+  - megahit
+  - openjdk
+  - perl-app-cpanminus
+  - perl-bioperl
+  - perl-clone
+  - perl-config-general
+  - perl-encode-locale
+  - perl-list-moreutils
+  - perl-math-bezier
+  - perl-math-round
+  - perl-math-vecstat
+  - perl-module-implementation
+  - perl-params-validate
+  - perl-set-intspan
+  - perl-statistics-basic
+  - perl-statistics-descriptive
+  - perl=5.32
+  - pkgconfig
+  - python>=3.6,<3.10
+  - requests
+  - samtools
+  - seqkit
+  - spades>=3.15.2  # [osx]
+  - spades>=3.15.4  # [linux]
+  - tbl2asn
+  - tiara
+  - wise2

@@ -1,0 +1,116 @@
+v3.6
+Fixed bugs:
+1. When using mitoz visualize `--depth_file`, there is no depth track in the resulting image (https://github.com/linzhi2013/MitoZ/issues/183)
+2. https://github.com/linzhi2013/MitoZ/issues/185
+3. shell problem and misuse of Mac OS cmsearch for Linux platform: https://github.com/linzhi2013/MitoZ/issues/187
+4. added tiara support to quickly identify mt contigs.
+5. fixed some bugs, fastq data sampling, file path problems.
+
+v3.5
+Fixed bugs:
+1. Fixed the dependency problem of 'mitoz-tools': html5lib
+2. Fixed the sub-sampling bug (it was 10 times than expected)
+3. Fixed the bug on https://github.com/linzhi2013/MitoZ/issues/154 and https://github.com/linzhi2013/MitoZ/issues/24#issuecomment-572884734.
+4. https://github.com/linzhi2013/MitoZ/issues/177
+5. https://github.com/linzhi2013/MitoZ/issues/176
+
+New features:
+1. Should now also run on Mac OS (M1 and Intel chips); but the assembler SPAdes won't work on Mac OS due to https://github.com/ablab/spades/issues/873 and lack of proper version for Mac OS. However, you can download it from https://cab.spbu.ru/files/release3.15.4/SPAdes-3.15.4-Darwin.tar.gz and put it into the mitozEnv environment (or PATH variable). The assembler mitoassembler also does not work on Mac OS yet. NB: it could be very tricky to install the Circos problem on Mac OS; you might want to install Circos by following http://circos.ca/tutorials/lessons/configuration/perl_and_modules/.
+
+2. Added a few tools to the 'mitoz-tools' command, see https://github.com/linzhi2013/MitoZ/wiki/Overview%3A-The-%27mitoz-tools%27-command.
+
+3. Users can now use their own sqn template file ('--template_sbt'):
+https://github.com/linzhi2013/MitoZ/issues/153
+
+
+# mac OSX
+$ circos --modules
+missing            Math::Bezier
+ok   1.999818 Math::BigFloat
+missing            Math::Round
+missing            Math::VecStat
+ok    1.03_01 Memoize
+ok       1.94 POSIX
+missing            Params::Validate
+ok       1.69 Pod::Usage
+ok       2.05 Readonly
+ok 2017060201 Regexp::Common
+ok       2.87 SVG
+missing            Set::IntSpan
+missing            Statistics::Basic
+
+$ cpan install Encode::Locale
+$ cpanm Math::Bezier Math::Round Math::VecStat Set::IntSpan Statistics::Basic Params::Validate Module::Implementation IO::String
+
+
+v3.4
+1. fixed three bugs: 
+- https://github.com/linzhi2013/MitoZ/issues/30
+- https://github.com/linzhi2013/MitoZ/issues/149
+- https://github.com/linzhi2013/MitoZ/issues/150 
+
+
+v3.3
+1. optimize the abundance calculation workflow in the 'findmitoscaf' function.
+2. add spades and megahit for mitogenome assembly
+3. If mitoassemble/spades/megahit have finished previous runs, we will just skip
+them to save time.
+4. fix a potential bug: a genus could belong to non-Metazoa
+
+
+v3.2
+1. Fixed a bug in 'filter_taxonomy_by_CDS_annotation.py', which did not parse the
+genetic code to the command correctly (always parsed 5 for all input genetic
+codes).
+
+2. '--requiring_taxa' becomes necessary option, in case the users set '--clade
+Chordata' but forget to set this option (because its default was
+'Arthropoda').
+
+3. Now the 'overlapping' information is copied to the resulting folder
+automatically.
+
+4. The circularity information now is parsed to the annotation module correctly.
+
+5. The length of sequence ids now are checked before running annotation.
+
+6. Seems that the problem which in some cases circos not drawing SVG/PNG files is fixed.
+
+7. For the dependency pakcage 'ete3', now we change it to v3.1.2, this shoulf fix the NCBITaxa() problem when creating or updating the database.
+
+v3.1
+add the seqkit program to subsample clean data for mitochondrial assembly,
+so the users don't have to do it by themselves.
+
+
+v3.0
+
+tested on one UCE sample (SRR8885027), got circular mitogenome.
+use fastp to filter.
+now multiple kmers can be specified by users directly
+
+v2.3
+20180123
+1. describe the most-closely-related species in the 'summary.txt' file
+2. describe the topology of each sequence in the 'summary.txt' file
+3. provide an example config file for each module in the program direcotry.
+4, make `all` and `filter` support single-end data
+5. now can also annotate control region.
+
+v2.2
+20180114
+1. add configure file support
+
+v2.1
+20180110
+1. add single-end data support
+
+v2.0
+20180104
+1. remove the useless codes
+2. to be more user-friendly
+
+v1.0
+20181121
+1. use conda to install blastn and other programs, MitoZ uses those command from the PATH variable
+

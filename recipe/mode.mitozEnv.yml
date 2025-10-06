@@ -1,0 +1,7 @@
+name: mitozEnv
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+    - wise2
