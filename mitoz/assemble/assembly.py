@@ -243,12 +243,21 @@ def use_mitoAssemble(args=None, workdir=None, outprefix=None, thread_number=None
         # logger.warning(m)
         # args.fq1 = ''
         # args.fq2 = ''
-        mt_file = findmitoscaf.main(args)
-        os.chdir('../../')
-
-        logger.info('use_mitoAssemble() found:\nassembly_file: {assembly_file}\nmt_file: {mt_file}'.format(assembly_file=assembly_file, mt_file=mt_file))
         
-        return assembly_file, mt_file
+        # Check if we're in iterative mode
+        if hasattr(args, 'iter') and args.iter > 1:
+            # In iterative mode, don't call findmitoscaf here
+            # Return the assembly file for iterative processing
+            logger.info('use_mitoAssemble() in iterative mode, skipping findmitoscaf')
+            logger.info('use_mitoAssemble() found assembly_file: {assembly_file}'.format(assembly_file=assembly_file))
+            os.chdir('../../')
+            return assembly_file, None
+        else:
+            # Normal mode: call findmitoscaf
+            mt_file = findmitoscaf.main(args)
+            os.chdir('../../')
+            logger.info('use_mitoAssemble() found:\nassembly_file: {assembly_file}\nmt_file: {mt_file}'.format(assembly_file=assembly_file, mt_file=mt_file))
+            return assembly_file, mt_file
 
     else:
         os.chdir('../../')
@@ -313,12 +322,20 @@ def use_spades(args=None, workdir=None, outprefix=None, thread_number=None, fq1=
         args.fastafile = assembly_file_reformated
         findmitoscaf_args=copy.copy(args)
 
-        mt_file = findmitoscaf.main(args)
-        os.chdir('../')
-
-        logger.info('use_spades() found:\nassembly_file: {assembly_file}\nmt_file: {mt_file}'.format(assembly_file=assembly_file, mt_file=mt_file))
-        
-        return assembly_file, mt_file
+        # Check if we're in iterative mode
+        if hasattr(args, 'iter') and args.iter > 1:
+            # In iterative mode, don't call findmitoscaf here
+            # Return the assembly file for iterative processing
+            logger.info('use_spades() in iterative mode, skipping findmitoscaf')
+            logger.info('use_spades() found assembly_file: {assembly_file}'.format(assembly_file=assembly_file))
+            os.chdir('../')
+            return assembly_file, None
+        else:
+            # Normal mode: call findmitoscaf
+            mt_file = findmitoscaf.main(args)
+            os.chdir('../')
+            logger.info('use_spades() found:\nassembly_file: {assembly_file}\nmt_file: {mt_file}'.format(assembly_file=assembly_file, mt_file=mt_file))
+            return assembly_file, mt_file
 
     else:
         os.chdir('../')
@@ -402,11 +419,18 @@ def use_megahit(args=None, workdir=None, outprefix=None, thread_number=None, fq1
         args.fastafile = assembly_file_reformated
         findmitoscaf_args=copy.copy(args)
 
-        mt_file = findmitoscaf.main(args)
-
-        logger.info('use_megahit() found:\nassembly_file: {assembly_file}\nmt_file: {mt_file}'.format(assembly_file=assembly_file, mt_file=mt_file))
-        
-        return assembly_file, mt_file
+        # Check if we're in iterative mode
+        if hasattr(args, 'iter') and args.iter > 1:
+            # In iterative mode, don't call findmitoscaf here
+            # Return the assembly file for iterative processing
+            logger.info('use_megahit() in iterative mode, skipping findmitoscaf')
+            logger.info('use_megahit() found assembly_file: {assembly_file}'.format(assembly_file=assembly_file))
+            return assembly_file, None
+        else:
+            # Normal mode: call findmitoscaf
+            mt_file = findmitoscaf.main(args)
+            logger.info('use_megahit() found:\nassembly_file: {assembly_file}\nmt_file: {mt_file}'.format(assembly_file=assembly_file, mt_file=mt_file))
+            return assembly_file, mt_file
 
     else:
         os.chdir('../')
@@ -518,20 +542,28 @@ def main(args):
             logger=logger)
         resulting_mt_files.append(mt_file)
 
-    logger.info('assemble.main() found resulting_mt_files:\n' + '\n'.join(resulting_mt_files))
+    # Filter out None values (which occur in iterative mode)
+    resulting_mt_files = [f for f in resulting_mt_files if f is not None]
+    
+    if resulting_mt_files:
+        logger.info('assemble.main() found resulting_mt_files:\n' + '\n'.join(resulting_mt_files))
+    else:
+        logger.info('assemble.main() found no mitogenome files (iterative mode)')
 
     all_result_wdir = []
     for f in resulting_mt_files:
-        d = find_subdirs_with_suffix(indir=os.path.dirname(f), suffix='.result')
-        if len(d) > 0:
-            all_result_wdir.extend(d)
+        if f:  # Check if f is not None
+            d = find_subdirs_with_suffix(indir=os.path.dirname(f), suffix='.result')
+            if len(d) > 0:
+                all_result_wdir.extend(d)
 
     d = find_subdirs_with_suffix(indir=workdir, suffix='.result')
     for f in d:
         if f not in all_result_wdir:
             all_result_wdir.append(f)
 
-    logger.info('And related resulting files can be found from:\n' + '\n'.join(all_result_wdir))
+    if all_result_wdir:
+        logger.info('And related resulting files can be found from:\n' + '\n'.join(all_result_wdir))
 
     return resulting_mt_files, all_result_wdir
 

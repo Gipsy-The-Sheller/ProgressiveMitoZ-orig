@@ -189,6 +189,14 @@ If you have missing genes, set '--slow_search' to use the tradicitiona search mo
         help='''the minimum abundance of sequence required. 
         Set this to any value <= 0 if you do NOT want to filter sequences by abundance [%(default)s]''')
 
+    # Iterative assembly arguments
+    iterative_group = parser.add_argument_group('Iterative assembly arguments')
+    
+    iterative_group.add_argument('--iter', metavar='<int>', type=int, default=1,
+        help='''Number of iterative assembly rounds after initial findmitoscaf.
+        Each iteration will collect reads mapping to current mitogenome candidates
+        and reassemble them to improve assembly quality. [%(default)s]''')
+
     return parser
 
 
@@ -256,6 +264,7 @@ class Assemble_Args():
         # self.skip_read_mapping = True
         self.genetic_code = raw_args.genetic_code
         self.clade = raw_args.clade
+        self.iter = getattr(raw_args, 'iter', 1)  # Default to 1 if not specified
 
     def __str__(self):
         return str(self.__dict__)
@@ -360,8 +369,365 @@ def main(args):
     assemble_args = Assemble_Args(args)
     args.fastafiles, assemble_all_result_wdir = mitoz.assemble.main(assemble_args)
 
+    # Perform iterative assembly if iter > 1
+    if args.iter > 1:
+        logger.info(f"Starting iterative assembly with {args.iter} iterations...")
+        args.fastafiles = perform_iterative_assembly(args, assemble_all_result_wdir, logger)
+
     annotate_args = Annotate_Args(args)
     resulting_gb_files, annotate_all_result_wdir = mitoz.annotate.main(annotate_args)
 
     gather_result(*assemble_all_result_wdir, *annotate_all_result_wdir, logger=args.logger, result_wdir=final_result_dir)
+
+
+def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
+    """
+    Perform iterative assembly after initial findmitoscaf.
+    
+    Args:
+        args: Command line arguments
+        assemble_all_result_wdir: Result directory from initial assembly
+        logger: Logger instance
+    
+    Returns:
+        List of final fasta files after iterative assembly
+    """
+    from mitoz.utility.utility import runcmd, abspath
+    from Bio import SeqIO
+    import shutil
+    
+    # In iterative mode, we need to run findmitoscaf on the initial assembly
+    # First, find the assembly file from the initial assembly
+    initial_assembly_file = None
+    for result_dir in assemble_all_result_wdir:
+        # Look for assembly files in the result directory
+        for root, dirs, files in os.walk(result_dir):
+            for file in files:
+                if file.endswith('.reformatted.fa'):
+                    initial_assembly_file = os.path.join(root, file)
+                    break
+            if initial_assembly_file:
+                break
+        if initial_assembly_file:
+            break
+    
+    if not initial_assembly_file:
+        logger.error("No initial assembly file found for iterative assembly")
+        return args.fastafiles
+    
+    # Run findmitoscaf on the initial assembly
+    logger.info(f"Running findmitoscaf on initial assembly: {initial_assembly_file}")
+    initial_mt_file = run_initial_findmitoscaf(initial_assembly_file, args, logger)
+    
+    if not initial_mt_file or not os.path.exists(initial_mt_file):
+        logger.error(f"Initial findmitoscaf failed or no mitogenome candidates found")
+        return args.fastafiles
+    
+    logger.info(f"Starting iterative assembly with {args.iter} iterations")
+    logger.info(f"Initial mitogenome candidates: {initial_mt_file}")
+    
+    current_mt_file = initial_mt_file
+    
+    for iteration in range(1, args.iter):
+        logger.info(f"=== Iteration {iteration}/{args.iter-1} ===")
+        
+        # Create iteration-specific directories
+        iter_workdir = os.path.join(args.workdir, f'iterative_assembly_{iteration}')
+        iter_reads_dir = os.path.join(iter_workdir, 'collected_reads')
+        iter_assembly_dir = os.path.join(iter_workdir, 'assembly')
+        
+        os.makedirs(iter_reads_dir, exist_ok=True)
+        os.makedirs(iter_assembly_dir, exist_ok=True)
+        
+        # Step 1: Collect reads mapping to current mitogenome candidates
+        logger.info(f"Collecting reads mapping to mitogenome candidates...")
+        collected_reads = collect_mapping_reads(
+            current_mt_file, 
+            args.fq1, 
+            args.fq2, 
+            iter_reads_dir, 
+            logger
+        )
+        
+        if not collected_reads:
+            logger.warning(f"No reads collected in iteration {iteration}, stopping iterative assembly")
+            break
+            
+        # Step 2: Reassemble with collected reads
+        logger.info(f"Reassembling with collected reads...")
+        new_mt_file = reassemble_with_reads(
+            collected_reads,
+            iter_assembly_dir,
+            args,
+            logger
+        )
+        
+        if not new_mt_file or not os.path.exists(new_mt_file):
+            logger.warning(f"Reassembly failed in iteration {iteration}, stopping iterative assembly")
+            break
+            
+        # Step 3: Find new mitogenome candidates
+        logger.info(f"Finding new mitogenome candidates...")
+        current_mt_file = find_new_mitogenome_candidates(
+            new_mt_file,
+            iter_assembly_dir,
+            args,
+            logger
+        )
+        
+        if not current_mt_file:
+            logger.warning(f"No new mitogenome candidates found in iteration {iteration}, stopping iterative assembly")
+            break
+            
+        logger.info(f"Iteration {iteration} completed. New candidates: {current_mt_file}")
+    
+    # Return the final mitogenome candidates
+    final_fastafiles = [current_mt_file] if current_mt_file else args.fastafiles
+    logger.info(f"Iterative assembly completed. Final candidates: {final_fastafiles}")
+    
+    return final_fastafiles
+
+
+def run_initial_findmitoscaf(assembly_file, args, logger):
+    """
+    Run findmitoscaf on the initial assembly to get mitogenome candidates.
+    
+    Args:
+        assembly_file: Path to the initial assembly file
+        args: Command line arguments
+        logger: Logger instance
+    
+    Returns:
+        Path to mitogenome candidates file
+    """
+    from mitoz import findmitoscaf
+    
+    # Create findmitoscaf arguments
+    findmitoscaf_args = type('Args', (), {})()
+    findmitoscaf_args.fastafile = assembly_file
+    findmitoscaf_args.fq1 = args.fq1
+    findmitoscaf_args.fq2 = args.fq2
+    findmitoscaf_args.outprefix = args.outprefix + "_initial"
+    findmitoscaf_args.workdir = os.path.join(args.workdir, 'initial_findmitoscaf')
+    findmitoscaf_args.thread_number = args.thread_number
+    findmitoscaf_args.profiles_dir = args.profiles_dir
+    findmitoscaf_args.slow_search = args.slow_search
+    findmitoscaf_args.filter_by_taxa = args.filter_by_taxa
+    findmitoscaf_args.requiring_taxa = args.requiring_taxa
+    findmitoscaf_args.requiring_relax = args.requiring_relax
+    findmitoscaf_args.min_abundance = args.min_abundance
+    findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
+    findmitoscaf_args.logger = logger
+    
+    logger.info(f"Running initial findmitoscaf on {assembly_file}")
+    
+    try:
+        mt_file = findmitoscaf.main(findmitoscaf_args)
+        return mt_file
+    except Exception as e:
+        logger.error(f"Initial findmitoscaf failed: {e}")
+        return None
+
+
+def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger):
+    """
+    Collect reads mapping to mitogenome candidates using BWA.
+    
+    Args:
+        mt_file: Path to mitogenome candidates file
+        fq1: Path to forward reads
+        fq2: Path to reverse reads  
+        output_dir: Output directory for collected reads
+        logger: Logger instance
+    
+    Returns:
+        List of collected read files
+    """
+    from mitoz.utility.utility import runcmd
+    
+    # Build BWA index
+    logger.info(f"Building BWA index for {mt_file}")
+    index_cmd = f"bwa index {mt_file}"
+    runcmd(index_cmd, logger=logger)
+    
+    # Map reads
+    sam_file = os.path.join(output_dir, "mapping.sam")
+    bam_file = os.path.join(output_dir, "mapping.bam")
+    sorted_bam = os.path.join(output_dir, "mapping_sorted.bam")
+    
+    if fq1 and fq2:
+        map_cmd = f"bwa mem -t 8 {mt_file} {fq1} {fq2} > {sam_file}"
+    elif fq1:
+        map_cmd = f"bwa mem -t 8 {mt_file} {fq1} > {sam_file}"
+    else:
+        logger.error("No input reads provided")
+        return []
+    
+    logger.info(f"Mapping reads: {map_cmd}")
+    runcmd(map_cmd, logger=logger)
+    
+    # Convert to BAM and sort
+    logger.info("Converting SAM to BAM and sorting...")
+    runcmd(f"samtools view -bS {sam_file} > {bam_file}", logger=logger)
+    runcmd(f"samtools sort {bam_file} -o {sorted_bam}", logger=logger)
+    
+    # Extract mapped reads
+    collected_fq1 = os.path.join(output_dir, "collected_R1.fq")
+    collected_fq2 = os.path.join(output_dir, "collected_R2.fq")
+    
+    if fq1 and fq2:
+        # Extract paired reads
+        runcmd(f"samtools fastq -1 {collected_fq1} -2 {collected_fq2} {sorted_bam}", logger=logger)
+        return [collected_fq1, collected_fq2]
+    else:
+        # Extract single reads
+        runcmd(f"samtools fastq {sorted_bam} > {collected_fq1}", logger=logger)
+        return [collected_fq1]
+
+
+def reassemble_with_reads(collected_reads, output_dir, args, logger):
+    """
+    Reassemble with collected reads using the same assembler as initial assembly.
+    
+    Args:
+        collected_reads: List of collected read files
+        output_dir: Output directory for reassembly
+        args: Command line arguments
+        logger: Logger instance
+    
+    Returns:
+        Path to reassembled contigs file
+    """
+    from mitoz.utility.utility import runcmd
+    
+    # Prepare reads
+    fq1 = collected_reads[0] if len(collected_reads) > 0 else None
+    fq2 = collected_reads[1] if len(collected_reads) > 1 else None
+    
+    # Use the same assembler as initial assembly
+    if args.assembler == 'megahit':
+        return reassemble_with_megahit(fq1, fq2, output_dir, args, logger)
+    elif args.assembler == 'spades':
+        return reassemble_with_spades(fq1, fq2, output_dir, args, logger)
+    elif args.assembler == 'mitoassemble':
+        return reassemble_with_mitoassemble(fq1, fq2, output_dir, args, logger)
+    else:
+        logger.error(f"Unsupported assembler for iterative assembly: {args.assembler}")
+        return None
+
+
+def reassemble_with_megahit(fq1, fq2, output_dir, args, logger):
+    """Reassemble with MEGAHIT"""
+    from mitoz.utility.utility import runcmd
+    
+    cmd = ["megahit", "--out-dir", output_dir, "--num-cpu-threads", str(args.thread_number)]
+    
+    if fq1 and fq2:
+        cmd.extend(["-1", fq1, "-2", fq2])
+    elif fq1:
+        cmd.extend(["-r", fq1])
+    
+    # Use k-mer list for iterative assembly (typically smaller k-mers for better assembly)
+    if hasattr(args, 'kmers_megahit') and args.kmers_megahit:
+        k_list = ",".join(map(str, args.kmers_megahit))
+        cmd.extend(["--k-list", k_list])
+    
+    cmd_str = " ".join(cmd)
+    logger.info(f"Reassembling with MEGAHIT: {cmd_str}")
+    runcmd(cmd_str, logger=logger)
+    
+    final_contigs = os.path.join(output_dir, "final.contigs.fa")
+    return final_contigs if os.path.exists(final_contigs) else None
+
+
+def reassemble_with_spades(fq1, fq2, output_dir, args, logger):
+    """Reassemble with SPAdes"""
+    from mitoz.utility.utility import runcmd
+    
+    cmd = ["spades.py", "--threads", str(args.thread_number), "-o", output_dir]
+    
+    if fq1 and fq2:
+        cmd.extend(["-1", fq1, "-2", fq2])
+    elif fq1:
+        cmd.extend(["-s", fq1])
+    
+    # Use k-mer list for iterative assembly
+    if hasattr(args, 'kmers_spades') and args.kmers_spades and args.kmers_spades != ['auto']:
+        k_list = ",".join(map(str, args.kmers_spades))
+        cmd.extend(["-k", k_list])
+    
+    cmd_str = " ".join(cmd)
+    logger.info(f"Reassembling with SPAdes: {cmd_str}")
+    runcmd(cmd_str, logger=logger)
+    
+    final_contigs = os.path.join(output_dir, "contigs.fasta")
+    return final_contigs if os.path.exists(final_contigs) else None
+
+
+def reassemble_with_mitoassemble(fq1, fq2, output_dir, args, logger):
+    """Reassemble with mitoAssemble"""
+    from mitoz.utility.utility import runcmd
+    
+    # mitoAssemble requires specific input format
+    # This is a simplified implementation
+    cmd = ["mitoAssemble", "--workdir", output_dir]
+    
+    if fq1 and fq2:
+        cmd.extend(["--fq1", fq1, "--fq2", fq2])
+    elif fq1:
+        cmd.extend(["--fq1", fq1])
+    
+    cmd_str = " ".join(cmd)
+    logger.info(f"Reassembling with mitoAssemble: {cmd_str}")
+    runcmd(cmd_str, logger=logger)
+    
+    # mitoAssemble output location may vary
+    final_contigs = os.path.join(output_dir, "final.contigs.fa")
+    if not os.path.exists(final_contigs):
+        final_contigs = os.path.join(output_dir, "contigs.fa")
+    
+    return final_contigs if os.path.exists(final_contigs) else None
+
+
+def find_new_mitogenome_candidates(contigs_file, output_dir, args, logger):
+    """
+    Find new mitogenome candidates from reassembled contigs using findmitoscaf.
+    
+    Args:
+        contigs_file: Path to reassembled contigs
+        output_dir: Output directory
+        args: Command line arguments
+        logger: Logger instance
+    
+    Returns:
+        Path to new mitogenome candidates file
+    """
+    from mitoz import findmitoscaf
+    from mitoz.utility.utility import runcmd
+    
+    # Create findmitoscaf arguments
+    findmitoscaf_args = type('Args', (), {})()
+    findmitoscaf_args.fastafile = contigs_file
+    findmitoscaf_args.fq1 = args.fq1
+    findmitoscaf_args.fq2 = args.fq2
+    findmitoscaf_args.outprefix = args.outprefix + f"_iter"
+    findmitoscaf_args.workdir = output_dir
+    findmitoscaf_args.thread_number = args.thread_number
+    findmitoscaf_args.profiles_dir = args.profiles_dir
+    findmitoscaf_args.slow_search = args.slow_search
+    findmitoscaf_args.filter_by_taxa = args.filter_by_taxa
+    findmitoscaf_args.requiring_taxa = args.requiring_taxa
+    findmitoscaf_args.requiring_relax = args.requiring_relax
+    findmitoscaf_args.min_abundance = args.min_abundance
+    findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
+    findmitoscaf_args.logger = logger
+    
+    logger.info(f"Finding mitogenome candidates from {contigs_file}")
+    
+    try:
+        mt_file = findmitoscaf.main(findmitoscaf_args)
+        return mt_file
+    except Exception as e:
+        logger.error(f"findmitoscaf failed: {e}")
+        return None
 
