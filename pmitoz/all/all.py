@@ -197,7 +197,7 @@ If you have missing genes, set '--slow_search' to use the tradicitiona search mo
         Each iteration will collect reads mapping to current mitogenome candidates
         and reassemble them to improve assembly quality. [%(default)s]''')
 
-    iterative_group.add_argument('--iter_assembler', metavar='<STR>', type=str, default='spades',
+    iterative_group.add_argument('--iter_assembler', metavar='<STR>', type=str, default='megahit',
         help='''Assembler used in iteration assembly. [%(default)s]''')
 
     return parser
@@ -371,6 +371,8 @@ def main(args):
 
     assemble_args = Assemble_Args(args)
     args.fastafiles, assemble_all_result_wdir = mitoz.assemble.main(assemble_args)
+
+    logger.info(f"fastafiles:{args.fastafiles}")
 
     # Perform iterative assembly if iter > 1
     if args.iter > 1:
