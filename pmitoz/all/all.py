@@ -463,7 +463,12 @@ def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
         iter_assembly_dir = os.path.join(iter_workdir, 'assembly')
         
         os.makedirs(iter_reads_dir, exist_ok=True)
-        os.makedirs(iter_assembly_dir, exist_ok=True)
+        # os.makedirs(iter_assembly_dir, exist_ok=True)
+        # MEGAHIT will create the directory itself. If it exists, then MEGAHIT will encounter an error.
+        # remove the directory if it exists
+        if os.path.exists(iter_assembly_dir):
+            logger.info(f"Removing existing reassembly directory: {iter_assembly_dir}")
+            shutil.rmtree(iter_assembly_dir)
         
         # Step 1: Collect reads mapping to current mitogenome candidates
         logger.info(f"Collecting reads mapping to mitogenome candidates...")
