@@ -197,6 +197,9 @@ If you have missing genes, set '--slow_search' to use the tradicitiona search mo
         Each iteration will collect reads mapping to current mitogenome candidates
         and reassemble them to improve assembly quality. [%(default)s]''')
 
+    iterative_group.add_argument('--iter_assembler', metavar='<STR>', type=str, default='spades',
+        help='''Assembler used in iteration assembly. [%(default)s]''')
+
     return parser
 
 
@@ -664,11 +667,11 @@ def reassemble_with_reads(collected_reads, output_dir, args, logger):
     fq2 = collected_reads[1] if len(collected_reads) > 1 else None
     
     # Use the same assembler as initial assembly
-    if args.assembler == 'megahit':
+    if args.iter_assembler == 'megahit':
         return reassemble_with_megahit(fq1, fq2, output_dir, args, logger)
-    elif args.assembler == 'spades':
+    elif args.iter_assembler == 'spades':
         return reassemble_with_spades(fq1, fq2, output_dir, args, logger)
-    elif args.assembler == 'mitoassemble':
+    elif args.iter_assembler == 'mitoassemble':
         return reassemble_with_mitoassemble(fq1, fq2, output_dir, args, logger)
     else:
         logger.error(f"Unsupported assembler for iterative assembly: {args.assembler}")
