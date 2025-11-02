@@ -605,14 +605,13 @@ def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger):
     runcmd(index_cmd, logger=logger)
     
     # Map reads
-    sam_file = os.path.join(output_dir, "mapping.sam")
     bam_file = os.path.join(output_dir, "mapping.bam")
     sorted_bam = os.path.join(output_dir, "mapping_sorted.bam")
     
     if fq1 and fq2:
-        map_cmd = f"bwa mem -t 8 {mt_file} {fq1} {fq2} > {sam_file}"
+        map_cmd = f"bwa mem -t {conf['threads']} {mt_file} {fq1} {fq2} | samtools view -b -h -F 4 > {bam_file}"
     elif fq1:
-        map_cmd = f"bwa mem -t 8 {mt_file} {fq1} > {sam_file}"
+        map_cmd = f"bwa mem -t {conf['threads']} {mt_file} {fq1} | samtools view -b -h -F 4 > {bam_file}"
     else:
         logger.error("No input reads provided")
         return []
