@@ -13,7 +13,7 @@ setup(
     long_description = long_description,
     license = 'GPLv3',
     packages=find_packages(),
-    entry_points = {'console_scripts': ['pmitoz = pmitoz.MitoZ:main', 'mitoz-tools = pmitoz.tools:main']},
+    entry_points = {'console_scripts': ['pmitoz = pmitoz.pmitoz:main', 'mitoz-tools = pmitoz.tools:main']},
     url='https://github.com/linzhi2013/MitoZ',
     python_requires='>=3',
     install_requires = [
