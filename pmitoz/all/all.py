@@ -27,14 +27,14 @@ import re
 import subprocess
 import time
 from glob import glob
-from mitoz.utility import utility
-from mitoz import findmitoscaf
-from mitoz.utility.utility import gather_result, runcmd, files_exist_0_or_1, file_not_empty
-from mitoz.utility.utility import pre_del_cmd, abspath
+from pmitoz.utility import utility
+from pmitoz import findmitoscaf
+from pmitoz.utility.utility import gather_result, runcmd, files_exist_0_or_1, file_not_empty
+from pmitoz.utility.utility import pre_del_cmd, abspath
 import copy
 from pathlib import Path
 
-import mitoz
+import pmitoz as mitoz  # Keep mitoz alias for compatibility
 
 python3 = sys.executable
 
@@ -392,7 +392,7 @@ def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
     Returns:
         List of final fasta files after iterative assembly
     """
-    from mitoz.utility.utility import runcmd, abspath
+    from pmitoz.utility.utility import runcmd, abspath
     from Bio import SeqIO
     import shutil
     
@@ -500,7 +500,7 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
     Returns:
         Path to mitogenome candidates file
     """
-    from mitoz import findmitoscaf
+    from pmitoz import findmitoscaf
     
     # Create findmitoscaf arguments
     findmitoscaf_args = type('Args', (), {})()
@@ -543,7 +543,7 @@ def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger):
     Returns:
         List of collected read files
     """
-    from mitoz.utility.utility import runcmd
+    from pmitoz.utility.utility import runcmd
     
     # Build BWA index
     logger.info(f"Building BWA index for {mt_file}")
@@ -598,7 +598,7 @@ def reassemble_with_reads(collected_reads, output_dir, args, logger):
     Returns:
         Path to reassembled contigs file
     """
-    from mitoz.utility.utility import runcmd
+    from pmitoz.utility.utility import runcmd
     
     # Prepare reads
     fq1 = collected_reads[0] if len(collected_reads) > 0 else None
@@ -618,7 +618,7 @@ def reassemble_with_reads(collected_reads, output_dir, args, logger):
 
 def reassemble_with_megahit(fq1, fq2, output_dir, args, logger):
     """Reassemble with MEGAHIT"""
-    from mitoz.utility.utility import runcmd
+    from pmitoz.utility.utility import runcmd
     
     cmd = ["megahit", "--out-dir", output_dir, "--num-cpu-threads", str(args.thread_number)]
     
@@ -642,7 +642,7 @@ def reassemble_with_megahit(fq1, fq2, output_dir, args, logger):
 
 def reassemble_with_spades(fq1, fq2, output_dir, args, logger):
     """Reassemble with SPAdes"""
-    from mitoz.utility.utility import runcmd
+    from pmitoz.utility.utility import runcmd
     
     cmd = ["spades.py", "--threads", str(args.thread_number), "-o", output_dir]
     
@@ -666,7 +666,7 @@ def reassemble_with_spades(fq1, fq2, output_dir, args, logger):
 
 def reassemble_with_mitoassemble(fq1, fq2, output_dir, args, logger):
     """Reassemble with mitoAssemble"""
-    from mitoz.utility.utility import runcmd
+    from pmitoz.utility.utility import runcmd
     
     # mitoAssemble requires specific input format
     # This is a simplified implementation
@@ -702,8 +702,8 @@ def find_new_mitogenome_candidates(contigs_file, output_dir, args, logger):
     Returns:
         Path to new mitogenome candidates file
     """
-    from mitoz import findmitoscaf
-    from mitoz.utility.utility import runcmd
+    from pmitoz import findmitoscaf
+    from pmitoz.utility.utility import runcmd
     
     # Create findmitoscaf arguments
     findmitoscaf_args = type('Args', (), {})()

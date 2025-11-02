@@ -47,7 +47,7 @@ from ete3 import NCBITaxa
 # we must make 'mitoz' directory a python package, otherwise, the subpackages won't work!
 # and during develpment, we also need to 'pip3 install -e .' the whole 'mitoz' package.
 
-from mitoz.utility import utility
+from pmitoz.utility import utility
 import importlib
 
 
@@ -65,7 +65,7 @@ def main():
     
     subparsers = parser.add_subparsers()
     for command_name in COMMANDS:
-        module = importlib.import_module('mitoz.' + command_name)
+        module = importlib.import_module('pmitoz.' + command_name)
         subparser = subparsers.add_parser(command_name,
             help=module.__doc__.split('\n')[1], description=module.__doc__)
         subparser.set_defaults(func=module.main)

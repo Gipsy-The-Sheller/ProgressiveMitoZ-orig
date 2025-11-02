@@ -22,10 +22,10 @@ import re
 import subprocess
 import time
 from glob import glob
-from mitoz.utility import utility
-from mitoz import findmitoscaf
-from mitoz.utility.utility import gather_result, runcmd, files_exist_0_or_1, file_not_empty
-from mitoz.utility.utility import pre_del_cmd, abspath, find_subdirs_with_suffix
+from pmitoz.utility import utility
+from pmitoz import findmitoscaf
+from pmitoz.utility.utility import gather_result, runcmd, files_exist_0_or_1, file_not_empty
+from pmitoz.utility.utility import pre_del_cmd, abspath, find_subdirs_with_suffix
 import copy
 from pathlib import Path
 
