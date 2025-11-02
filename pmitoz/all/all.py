@@ -552,9 +552,34 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
     
     try:
         mt_file = findmitoscaf.main(findmitoscaf_args)
-        return mt_file
+        # Verify the returned file exists
+        if mt_file and os.path.exists(mt_file):
+            logger.info(f"Initial findmitoscaf completed successfully: {mt_file}")
+            return os.path.abspath(mt_file)
+        else:
+            logger.warning(f"findmitoscaf returned path that doesn't exist: {mt_file}")
+            # Try to find the file in the workdir
+            workdir = findmitoscaf_args.workdir
+            potential_files = [
+                os.path.join(workdir, findmitoscaf_args.outprefix + '.mitogenome.fa'),
+                os.path.join(workdir, '*.mitogenome.fa'),
+            ]
+            for pattern in potential_files:
+                if '*' in pattern:
+                    import glob
+                    matches = glob.glob(pattern)
+                    if matches:
+                        logger.info(f"Found mitogenome file: {matches[0]}")
+                        return os.path.abspath(matches[0])
+                elif os.path.exists(pattern):
+                    logger.info(f"Found mitogenome file: {pattern}")
+                    return os.path.abspath(pattern)
+            logger.error("Could not find mitogenome file after findmitoscaf")
+            return None
     except Exception as e:
         logger.error(f"Initial findmitoscaf failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return None
 
 
@@ -807,8 +832,32 @@ def find_new_mitogenome_candidates(contigs_file, output_dir, args, logger):
     
     try:
         mt_file = findmitoscaf.main(findmitoscaf_args)
-        return mt_file
+        # Verify the returned file exists
+        if mt_file and os.path.exists(mt_file):
+            logger.info(f"findmitoscaf iteration completed successfully: {mt_file}")
+            return os.path.abspath(mt_file)
+        else:
+            logger.warning(f"findmitoscaf returned path that doesn't exist: {mt_file}")
+            # Try to find the file in the workdir
+            workdir = findmitoscaf_args.workdir
+            potential_files = [
+                os.path.join(workdir, findmitoscaf_args.outprefix + '.mitogenome.fa'),
+            ]
+            for pattern in potential_files:
+                import glob
+                if '*' in pattern:
+                    matches = glob.glob(pattern)
+                    if matches:
+                        logger.info(f"Found mitogenome file: {matches[0]}")
+                        return os.path.abspath(matches[0])
+                elif os.path.exists(pattern):
+                    logger.info(f"Found mitogenome file: {pattern}")
+                    return os.path.abspath(pattern)
+            logger.error("Could not find mitogenome file after findmitoscaf")
+            return None
     except Exception as e:
         logger.error(f"findmitoscaf failed: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         return None
 

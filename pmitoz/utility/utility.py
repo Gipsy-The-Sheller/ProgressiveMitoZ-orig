@@ -40,12 +40,14 @@ def pre_del_cmd(prefix=None, filestr=None):
     return command
 
 def gather_result(*files, logger=None, result_wdir=None):
-    if not os.path.isdir(Path(result_wdir)):
-        logger.info("gather_result() creating: " + result_wdir)
-        os.mkdir(result_wdir)
-    flist = " ".join(files)
-    command = "cp -r " + flist + " " + result_wdir
-    runcmd(command, logger=logger)
+    if result_wdir:
+        if not os.path.isdir(Path(result_wdir)):
+            logger.info("gather_result() creating: " + result_wdir)
+            os.makedirs(result_wdir, exist_ok=True)
+        flist = " ".join([f for f in files if f and os.path.exists(str(f))])
+        if flist:
+            command = "cp -r " + flist + " " + result_wdir
+            runcmd(command, logger=logger)
 
 def file_not_empty(file=None):
     """
