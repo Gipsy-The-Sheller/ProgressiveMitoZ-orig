@@ -6,10 +6,10 @@ with open('README.md') as f:
 
 
 setup(
-    name='mitoz',
+    name='pmitoz',
     version = '3.6',
-    author = 'Guanliang Meng',
-    author_email = 'linzhi2012@gmail.com',
+    author = 'Zhi-Jie Xu',
+    author_email = 'zjxmolls@outlook.com',
     long_description = long_description,
     license = 'GPLv3',
     packages=find_packages(),
