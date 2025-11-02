@@ -445,9 +445,9 @@ def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
         return args.fastafiles if args.fastafiles else []
     
     # Run findmitoscaf on the initial assembly
-    # logger.info(f"Running findmitoscaf on initial assembly: {initial_assembly_file}")
-    # initial_mt_file = run_initial_findmitoscaf(initial_assembly_file, args, logger)
-    initial_mt_file = initial_assembly_file
+    logger.info(f"Running findmitoscaf on initial assembly: {initial_assembly_file}")
+    initial_mt_file = run_initial_findmitoscaf(initial_assembly_file, args, logger)
+    # initial_mt_file = initial_assembly_file
 
     if not initial_mt_file or not os.path.exists(initial_mt_file):
         logger.error(f"Initial findmitoscaf failed or no mitogenome candidates found")
@@ -553,7 +553,7 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
     findmitoscaf_args.requiring_relax = args.requiring_relax
     findmitoscaf_args.min_abundance = args.min_abundance
     findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
-    findmitoscaf_args.skip_read_mapping = False  # Need to map reads to calculate abundance
+    findmitoscaf_args.skip_read_mapping = True
     findmitoscaf_args.genetic_code = getattr(args, 'genetic_code', 'auto')
     findmitoscaf_args.clade = getattr(args, 'clade', 'Arthropoda')
     findmitoscaf_args.logger = logger
