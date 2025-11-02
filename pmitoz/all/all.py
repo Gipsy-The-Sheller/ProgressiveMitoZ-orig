@@ -628,7 +628,7 @@ def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger, thread_number):
     # # Convert to BAM and sort
     # logger.info("Converting SAM to BAM and sorting...")
     # runcmd(f"samtools view -bS {sam_file} > {bam_file}", logger=logger)
-    # runcmd(f"samtools sort {bam_file} -o {sorted_bam}", logger=logger)
+    runcmd(f"samtools sort {bam_file} -o {sorted_bam}", logger=logger)
     
     # Extract mapped reads
     collected_fq1 = os.path.join(output_dir, "collected_R1.fq")
