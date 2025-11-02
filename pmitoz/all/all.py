@@ -372,8 +372,6 @@ def main(args):
     assemble_args = Assemble_Args(args)
     args.fastafiles, assemble_all_result_wdir = mitoz.assemble.main(assemble_args)
 
-    logger.info(f"fastafiles:{args.fastafiles}")
-
     # Perform iterative assembly if iter > 1
     if args.iter > 1:
         logger.info(f"Starting iterative assembly with {args.iter} iterations...")
@@ -447,9 +445,10 @@ def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
         return args.fastafiles if args.fastafiles else []
     
     # Run findmitoscaf on the initial assembly
-    logger.info(f"Running findmitoscaf on initial assembly: {initial_assembly_file}")
-    initial_mt_file = run_initial_findmitoscaf(initial_assembly_file, args, logger)
-    
+    # logger.info(f"Running findmitoscaf on initial assembly: {initial_assembly_file}")
+    # initial_mt_file = run_initial_findmitoscaf(initial_assembly_file, args, logger)
+    initial_mt_file = initial_assembly_file
+
     if not initial_mt_file or not os.path.exists(initial_mt_file):
         logger.error(f"Initial findmitoscaf failed or no mitogenome candidates found")
         return args.fastafiles
