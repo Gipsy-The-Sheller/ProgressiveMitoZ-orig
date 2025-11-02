@@ -28,7 +28,7 @@ from glob import glob
 import Bio
 from Bio import SeqIO
 from ete3 import NCBITaxa
-from mitoz.utility.utility import gather_result, runcmd, files_exist_0_or_1, file_not_empty
+from pmitoz.utility.utility import gather_result, runcmd, files_exist_0_or_1, file_not_empty
 from pathlib import Path
 
 

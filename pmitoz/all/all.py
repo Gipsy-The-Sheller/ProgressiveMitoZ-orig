@@ -543,6 +543,9 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
     findmitoscaf_args.requiring_relax = args.requiring_relax
     findmitoscaf_args.min_abundance = args.min_abundance
     findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
+    findmitoscaf_args.skip_read_mapping = False  # Need to map reads to calculate abundance
+    findmitoscaf_args.genetic_code = getattr(args, 'genetic_code', 'auto')
+    findmitoscaf_args.clade = getattr(args, 'clade', 'Arthropoda')
     findmitoscaf_args.logger = logger
     
     logger.info(f"Running initial findmitoscaf on {assembly_file}")
@@ -795,6 +798,9 @@ def find_new_mitogenome_candidates(contigs_file, output_dir, args, logger):
     findmitoscaf_args.requiring_relax = args.requiring_relax
     findmitoscaf_args.min_abundance = args.min_abundance
     findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
+    findmitoscaf_args.skip_read_mapping = False  # Need to map reads to calculate abundance
+    findmitoscaf_args.genetic_code = getattr(args, 'genetic_code', 'auto')
+    findmitoscaf_args.clade = getattr(args, 'clade', 'Arthropoda')
     findmitoscaf_args.logger = logger
     
     logger.info(f"Finding mitogenome candidates from {contigs_file}")
