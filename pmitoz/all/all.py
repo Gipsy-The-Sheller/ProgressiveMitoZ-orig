@@ -472,7 +472,8 @@ def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
             args.fq1, 
             args.fq2, 
             iter_reads_dir, 
-            logger
+            logger,
+            args.thread_number
         )
         
         if not collected_reads:
@@ -583,7 +584,7 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
         return None
 
 
-def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger):
+def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger, thread_number):
     """
     Collect reads mapping to mitogenome candidates using BWA.
     
@@ -609,9 +610,9 @@ def collect_mapping_reads(mt_file, fq1, fq2, output_dir, logger):
     sorted_bam = os.path.join(output_dir, "mapping_sorted.bam")
     
     if fq1 and fq2:
-        map_cmd = f"bwa mem -t {args.thread_number} {mt_file} {fq1} {fq2} | samtools view -b -h -F 4 > {bam_file}"
+        map_cmd = f"bwa mem -t {thread_number} {mt_file} {fq1} {fq2} | samtools view -b -h -F 4 > {bam_file}"
     elif fq1:
-        map_cmd = f"bwa mem -t {args.thread_number} {mt_file} {fq1} | samtools view -b -h -F 4 > {bam_file}"
+        map_cmd = f"bwa mem -t {thread_number} {mt_file} {fq1} | samtools view -b -h -F 4 > {bam_file}"
     else:
         logger.error("No input reads provided")
         return []
