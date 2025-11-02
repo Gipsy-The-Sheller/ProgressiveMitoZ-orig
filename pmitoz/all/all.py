@@ -397,23 +397,49 @@ def perform_iterative_assembly(args, assemble_all_result_wdir, logger):
     import shutil
     
     # In iterative mode, we need to run findmitoscaf on the initial assembly
-    # First, find the assembly file from the initial assembly
+    # Find the assembly file from the initial assembly
+    # The assembly file should be in the mt_assembly directory
     initial_assembly_file = None
-    for result_dir in assemble_all_result_wdir:
-        # Look for assembly files in the result directory
-        for root, dirs, files in os.walk(result_dir):
+    
+    # First try to find from workdir/mt_assembly
+    mt_assembly_dir = os.path.join(args.workdir, 'mt_assembly')
+    if os.path.exists(mt_assembly_dir):
+        for root, dirs, files in os.walk(mt_assembly_dir):
             for file in files:
                 if file.endswith('.reformatted.fa'):
                     initial_assembly_file = os.path.join(root, file)
+                    logger.info(f"Found initial assembly file: {initial_assembly_file}")
                     break
             if initial_assembly_file:
                 break
-        if initial_assembly_file:
-            break
+    
+    # If not found, try to find from result directories
+    if not initial_assembly_file:
+        for result_dir in assemble_all_result_wdir:
+            if os.path.exists(result_dir):
+                for root, dirs, files in os.walk(result_dir):
+                    for file in files:
+                        if file.endswith('.reformatted.fa'):
+                            initial_assembly_file = os.path.join(root, file)
+                            logger.info(f"Found initial assembly file from result dir: {initial_assembly_file}")
+                            break
+                    if initial_assembly_file:
+                        break
+            if initial_assembly_file:
+                break
+    
+    # If still not found, check if args.fastafiles has any valid files
+    if not initial_assembly_file and args.fastafiles:
+        for fastafile in args.fastafiles:
+            if fastafile and os.path.exists(fastafile):
+                initial_assembly_file = fastafile
+                logger.info(f"Using assembly file from args.fastafiles: {initial_assembly_file}")
+                break
     
     if not initial_assembly_file:
         logger.error("No initial assembly file found for iterative assembly")
-        return args.fastafiles
+        logger.error(f"Searched in: {mt_assembly_dir} and result directories")
+        return args.fastafiles if args.fastafiles else []
     
     # Run findmitoscaf on the initial assembly
     logger.info(f"Running findmitoscaf on initial assembly: {initial_assembly_file}")
@@ -619,6 +645,10 @@ def reassemble_with_reads(collected_reads, output_dir, args, logger):
 def reassemble_with_megahit(fq1, fq2, output_dir, args, logger):
     """Reassemble with MEGAHIT"""
     from pmitoz.utility.utility import runcmd
+    import sys
+    
+    megahit_script_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'assemble', 'script', 'megahit')
+    python3 = sys.executable
     
     cmd = ["megahit", "--out-dir", output_dir, "--num-cpu-threads", str(args.thread_number)]
     
@@ -637,7 +667,22 @@ def reassemble_with_megahit(fq1, fq2, output_dir, args, logger):
     runcmd(cmd_str, logger=logger)
     
     final_contigs = os.path.join(output_dir, "final.contigs.fa")
-    return final_contigs if os.path.exists(final_contigs) else None
+    if not os.path.exists(final_contigs):
+        return None
+    
+    # Reformat the contigs file for findmitoscaf
+    assembly_file_reformated = final_contigs + '.reformatted.fa'
+    soft = os.path.join(megahit_script_dir, 'reformat_megahit_scafSeq.py')
+    if os.path.exists(soft):
+        command = python3 + " " + soft +\
+            ' {0} '.format(final_contigs) +\
+            ' {0} '.format(assembly_file_reformated)
+        runcmd(command, logger=logger)
+        if os.path.exists(assembly_file_reformated):
+            return assembly_file_reformated
+    
+    # If reformat script not found, return original file
+    return final_contigs
 
 
 def reassemble_with_spades(fq1, fq2, output_dir, args, logger):
@@ -661,7 +706,22 @@ def reassemble_with_spades(fq1, fq2, output_dir, args, logger):
     runcmd(cmd_str, logger=logger)
     
     final_contigs = os.path.join(output_dir, "contigs.fasta")
-    return final_contigs if os.path.exists(final_contigs) else None
+    if not os.path.exists(final_contigs):
+        return None
+    
+    # Reformat the contigs file for findmitoscaf
+    assembly_file_reformated = final_contigs + '.reformatted.fa'
+    soft = os.path.join(spades_script_dir, 'reformat_spades_scafSeq.py')
+    if os.path.exists(soft):
+        command = python3 + " " + soft +\
+            ' {0} '.format(final_contigs) +\
+            ' {0} '.format(assembly_file_reformated)
+        runcmd(command, logger=logger)
+        if os.path.exists(assembly_file_reformated):
+            return assembly_file_reformated
+    
+    # If reformat script not found, return original file
+    return final_contigs
 
 
 def reassemble_with_mitoassemble(fq1, fq2, output_dir, args, logger):
@@ -686,7 +746,22 @@ def reassemble_with_mitoassemble(fq1, fq2, output_dir, args, logger):
     if not os.path.exists(final_contigs):
         final_contigs = os.path.join(output_dir, "contigs.fa")
     
-    return final_contigs if os.path.exists(final_contigs) else None
+    if not os.path.exists(final_contigs):
+        return None
+    
+    # Reformat the contigs file for findmitoscaf
+    assembly_file_reformated = final_contigs + '.reformatted.fa'
+    soft = os.path.join(mitoassemble_script_dir, 'reformat_mitoassemble_scafSeq.py')
+    if os.path.exists(soft):
+        command = python3 + " " + soft +\
+            ' {0} '.format(final_contigs) +\
+            ' {0} '.format(assembly_file_reformated)
+        runcmd(command, logger=logger)
+        if os.path.exists(assembly_file_reformated):
+            return assembly_file_reformated
+    
+    # If reformat script not found, return original file
+    return final_contigs
 
 
 def find_new_mitogenome_candidates(contigs_file, output_dir, args, logger):

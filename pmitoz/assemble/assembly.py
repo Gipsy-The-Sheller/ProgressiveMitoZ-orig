@@ -422,10 +422,10 @@ def use_megahit(args=None, workdir=None, outprefix=None, thread_number=None, fq1
         # Check if we're in iterative mode
         if hasattr(args, 'iter') and args.iter > 1:
             # In iterative mode, don't call findmitoscaf here
-            # Return the assembly file for iterative processing
+            # Return the reformatted assembly file for iterative processing
             logger.info('use_megahit() in iterative mode, skipping findmitoscaf')
-            logger.info('use_megahit() found assembly_file: {assembly_file}'.format(assembly_file=assembly_file))
-            return assembly_file, None
+            logger.info('use_megahit() found assembly_file: {assembly_file}'.format(assembly_file=assembly_file_reformated))
+            return assembly_file_reformated, None
         else:
             # Normal mode: call findmitoscaf
             mt_file = findmitoscaf.main(args)
