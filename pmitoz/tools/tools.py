@@ -30,7 +30,7 @@ from ete3 import NCBITaxa
 # we must make 'mitoz' directory a python package, otherwise, the subpackages won't work!
 # and during develpment, we also need to 'pip3 install -e .' the whole 'mitoz' package.
 
-from mitoz.utility import utility
+from p  mitoz.utility import utility
 import importlib
 
 __version__ = '1.0'

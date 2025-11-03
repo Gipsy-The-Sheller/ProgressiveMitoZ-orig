@@ -21,11 +21,11 @@ import re
 import subprocess
 import time
 from glob import glob
-from mitoz.utility import utility
-from mitoz import findmitoscaf
-from mitoz import visualize
-from mitoz.utility.utility import gather_result, runcmd, runcmd2, files_exist_0_or_1, file_not_empty
-from mitoz.utility.utility import pre_del_cmd, abspath, find_subdirs_with_suffix, check_fafile_seqid_len
+from pmitoz.utility import utility
+from pmitoz import findmitoscaf
+from pmitoz import visualize
+from pmitoz.utility.utility import gather_result, runcmd, runcmd2, files_exist_0_or_1, file_not_empty
+from pmitoz.utility.utility import pre_del_cmd, abspath, find_subdirs_with_suffix, check_fafile_seqid_len
 import copy
 from Bio import SeqIO
 from pathlib import Path

@@ -28,7 +28,7 @@ import os
 import re
 import time
 from ete3 import NCBITaxa
-from mitoz.tools.taxonomy_ranks import TaxonomyRanks
+from pmitoz.tools.taxonomy_ranks import TaxonomyRanks
 
 
 description = "Filter out non-target-taxon sequences by mito-CDS annotation."

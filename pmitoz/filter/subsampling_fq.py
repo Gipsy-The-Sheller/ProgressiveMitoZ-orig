@@ -28,7 +28,7 @@ import subprocess
 import time
 from glob import glob
 from pathlib import Path
-from mitoz.utility import utility
+from pmitoz.utility import utility
 
 
 def runcmd(command, logger=None):
