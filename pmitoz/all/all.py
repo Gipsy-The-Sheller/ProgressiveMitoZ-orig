@@ -553,16 +553,19 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
     findmitoscaf_args.requiring_relax = args.requiring_relax
     findmitoscaf_args.min_abundance = args.min_abundance
     findmitoscaf_args.tmp_dir = None
-    findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\\.*[0-9]*)'
+    findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
     findmitoscaf_args.skip_read_mapping = True
     findmitoscaf_args.genetic_code = getattr(args, 'genetic_code', 'auto')
     findmitoscaf_args.clade = getattr(args, 'clade', 'Arthropoda')
     findmitoscaf_args.logger = logger
+
+    # convert args to dict
+    findmitoscaf_args_dict = vars(findmitoscaf_args)
     
     logger.info(f"Running initial findmitoscaf on {assembly_file}")
     
     try:
-        mt_file = findmitoscaf.main(findmitoscaf_args)
+        mt_file = findmitoscaf.main(findmitoscaf_args_dict)
         # Verify the returned file exists
         if mt_file and os.path.exists(mt_file):
             logger.info(f"Initial findmitoscaf completed successfully: {mt_file}")
