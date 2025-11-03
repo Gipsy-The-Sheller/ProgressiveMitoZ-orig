@@ -552,7 +552,8 @@ def run_initial_findmitoscaf(assembly_file, args, logger):
     findmitoscaf_args.requiring_taxa = args.requiring_taxa
     findmitoscaf_args.requiring_relax = args.requiring_relax
     findmitoscaf_args.min_abundance = args.min_abundance
-    findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\.*[0-9]*)'
+    findmitoscaf_args.tmp_dir = None
+    findmitoscaf_args.abundance_pattern = r'abun\=([0-9]+\\.*[0-9]*)'
     findmitoscaf_args.skip_read_mapping = True
     findmitoscaf_args.genetic_code = getattr(args, 'genetic_code', 'auto')
     findmitoscaf_args.clade = getattr(args, 'clade', 'Arthropoda')
